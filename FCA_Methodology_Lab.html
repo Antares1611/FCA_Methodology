@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spatial Accessibility & FCA Evolution — Interactive Research Lab</title>
+<style>
+  :root {
+    --bg-main: #0b1120;
+    --bg-card: #151f32;
+    --bg-card-alt: #1e293b;
+    --border: #2dd4bf33;
+    --border-subtle: #334155;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --accent-cyan: #38bdf8;
+    --accent-teal: #2dd4bf;
+    --accent-amber: #f59e0b;
+    --accent-rose: #f43f5e;
+    --accent-purple: #a855f7;
+    --accent-emerald: #10b981;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    line-height: 1.5;
+    padding: 16px;
+    overflow-x: hidden;
+  }
+  .container {
+    max-width: 1380px;
+    margin: 0 auto;
+  }
+  /* Header */
+  .header {
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 14px;
+    margin-bottom: 14px;
+  }
+  .header h1 {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .header p {
+    font-size: 0.84rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(56, 189, 248, 0.15);
+    color: var(--accent-cyan);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+
+  /* Navigation Tabs - Wraps cleanly so no ugly scrollbar */
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .tab-btn {
+    background: var(--bg-card);
+    color: var(--text-muted);
+    border: 1px solid var(--border-subtle);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .tab-btn:hover {
+    color: #fff;
+    border-color: var(--accent-cyan);
+  }
+  .tab-btn.active {
+    background: rgba(56, 189, 248, 0.18);
+    color: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+  }
+
+  /* Main Dashboard Grid */
+  .workspace {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .workspace {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Left Control Panel */
+  .sidebar {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .sidebar h2 {
+    font-size: 1.05rem;
+    color: var(--accent-cyan);
+    margin-bottom: 6px;
+  }
+  .sidebar .desc {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+  .control-group {
+    margin-bottom: 14px;
+  }
+  .control-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .control-val {
+    color: var(--accent-cyan);
+    font-weight: 700;
+  }
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent-cyan);
+    cursor: pointer;
+  }
+  .tip {
+    font-size: 0.73rem;
+    color: var(--text-muted);
+    margin-top: 3px;
+    line-height: 1.35;
+  }
+  select {
+    width: 100%;
+    background: var(--bg-main);
+    color: #fff;
+    border: 1px solid var(--border-subtle);
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    margin-top: 4px;
+  }
+  .preset-box {
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 12px;
+    margin-top: 12px;
+  }
+  .preset-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .preset-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .preset-btn {
+    background: var(--bg-card-alt);
+    color: #e2e8f0;
+    border: 1px solid var(--border-subtle);
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 0.74rem;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover {
+    border-color: var(--accent-teal);
+    color: var(--accent-teal);
+  }
+
+  /* Right Content Area */
+  .main-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .card-title {
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .card-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  /* KPI Strip */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .kpi-card {
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
+    border-left: 4px solid var(--accent-cyan);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .kpi-name {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .kpi-num {
+    font-size: 1.18rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 2px 0;
+  }
+  .kpi-sub {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+
+  /* Canvas Wrapper */
+  .canvas-wrap {
+    width: 100%;
+    height: 360px;
+    position: relative;
+    background: #0d1526;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 8px;
+  }
+  canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* Legend */
+  .legend-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 10px;
+    font-size: 0.78rem;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .swatch {
+    width: 14px;
+    height: 4px;
+    border-radius: 2px;
+  }
+
+  /* Callout Box */
+  .insight-box {
+    background: rgba(45, 212, 191, 0.08);
+    border-left: 4px solid var(--accent-teal);
+    padding: 12px 14px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    color: #e2e8f0;
+    margin-top: 10px;
+  }
+  .insight-box strong {
+    color: var(--accent-teal);
+  }
+
+  /* Tables */
+  .table-wrap {
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    margin-top: 8px;
+  }
+  th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  th {
+    background: var(--bg-card-alt);
+    color: var(--accent-cyan);
+    font-weight: 600;
+  }
+  tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .hidden {
+    display: none !important;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <h1>Spatial Accessibility &amp; FCA Evolution — Interactive Research Lab</h1>
+    <p>Self-Learning &amp; Peer Handover Dashboard | Grounded in Luo &amp; Wang (2003), Wan et al. (2012), Delamater (2013), Subal et al. (2021), &amp; Stacherl &amp; Sauzet (2023)</p>
+    <span class="badge">GIS Methodology Handover v2.0 (Google Sites &amp; Offline Ready)</span>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(1)">1. FCA Evolution &amp; Decay Curves</button>
+    <button class="tab-btn" onclick="switchTab(2)">2. Competition &amp; Huff Sandbox (3SFCA vs MH3SFCA)</button>
+    <button class="tab-btn" onclick="switchTab(3)">3. Beta Sensitivity (SPAI vs SPAR)</button>
+    <button class="tab-btn" onclick="switchTab(4)">4. Master Comparison &amp; Decision Advisor</button>
+    <button class="tab-btn" onclick="switchTab(5)">5. Mekong Delta / Can Tho QGIS Workflow</button>
+  </div>
+
+  <!-- Main Workspace -->
+  <div class="workspace">
+    <!-- Left Parameter Controls -->
+    <div class="sidebar">
+      <h2>Interactive Parameter Controls</h2>
+      <p class="desc">Adjust travel friction (&beta;), catchment threshold (d<sub>0</sub>), and competing facilities to see how the 5 core FCA formulas behave across travel time.</p>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Catchment Threshold (d<sub>0</sub>)</span>
+          <span class="control-val" id="lbl_d0">60 min</span>
+        </div>
+        <input type="range" id="sl_d0" min="15" max="90" step="5" value="60" oninput="updateAll()">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Gaussian Impedance (&beta;)</span>
+          <span class="control-val" id="lbl_beta">781</span>
+        </div>
+        <input type="range" id="sl_beta" min="100" max="1200" step="10" value="781" oninput="updateAll()">
+        <p class="tip">Tip: &beta; = 781 sets Gaussian weight W = 0.01 at d<sub>0</sub> = 60 min (Can Tho Map A). &beta; = 195 sets W = 0.01 at d<sub>0</sub> = 30 min (Map B).</p>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Inspect Travel Time (d<sub>ij</sub>)</span>
+          <span class="control-val" id="lbl_dij">30 min</span>
+        </div>
+        <input type="range" id="sl_dij" min="0" max="85" step="1" value="30" oninput="updateAll()">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Alternative Competing Clinics (N<sub>alt</sub>)</span>
+          <span class="control-val" id="lbl_nalt">2 clinics</span>
+        </div>
+        <input type="range" id="sl_nalt" min="0" max="6" step="1" value="2" oninput="updateAll()">
+        <p class="tip">Set N<sub>alt</sub> = 0 to observe the "Single-Provider Weight Cancellation" flaw in E2SFCA vs M2SFCA!</p>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Primary Facility Tier Capacity (S<sub>j</sub>)</span>
+        </div>
+        <select id="sel_sj" onchange="updateAll()">
+          <option value="200">Tier 1: Provincial Specialized (S_j = 200)</option>
+          <option value="50">Tier 2: District Basic (S_j = 50)</option>
+          <option value="5">Tier 3: Commune Initial (S_j = 5)</option>
+        </select>
+      </div>
+
+      <div class="preset-box">
+        <div class="preset-title">Quick Research Presets:</div>
+        <div class="preset-grid">
+          <button class="preset-btn" onclick="applyPreset(60, 781, 25, 2, 200)">Can Tho Map A (60m)</button>
+          <button class="preset-btn" onclick="applyPreset(30, 195, 18, 2, 200)">Can Tho Map B (30m)</button>
+          <button class="preset-btn" onclick="applyPreset(60, 781, 30, 0, 200)">Single-Clinic Flaw (N=0)</button>
+          <button class="preset-btn" onclick="applyPreset(60, 440, 25, 4, 50)">Dense Cluster (N=4)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Dynamic Views -->
+    <div class="main-panel">
+
+      <!-- TAB 1: FCA Evolution & Decay Curves -->
+      <div id="tab1" class="tab-view">
+        <div class="card">
+          <div class="card-title">
+            <span>Live Accessibility Curve Comparison across Travel Time (0 to 90 min)</span>
+            <span class="badge" id="badge_mode">Multi-Facility Competition Active</span>
+          </div>
+          <p class="card-subtitle">Comparing how 2SFCA, E2SFCA, M2SFCA, 3SFCA, and MH3SFCA evaluate accessibility as travel time d<sub>ij</sub> increases.</p>
+
+          <div class="kpi-grid">
+            <div class="kpi-card" style="border-left-color: #94a3b8;">
+              <div class="kpi-name">2SFCA (Luo &amp; Wang 2003)</div>
+              <div class="kpi-num" id="kpi_2sfca">0.000</div>
+              <div class="kpi-sub">Binary step (1 or 0)</div>
+            </div>
+            <div class="kpi-card" style="border-left-color: #38bdf8;">
+              <div class="kpi-name">E2SFCA (Luo &amp; Qi 2009)</div>
+              <div class="kpi-num" id="kpi_e2sfca">0.000</div>
+              <div class="kpi-sub">Gaussian decay W<sub>ij</sub></div>
+            </div>
+            <div class="kpi-card" style="border-left-color: #f43f5e;">
+              <div class="kpi-name">M2SFCA (Delamater 2013)</div>
+              <div class="kpi-num" id="kpi_m2sfca">0.000</div>
+              <div class="kpi-sub">Squared numerator W<sub>ij</sub><sup>2</sup></div>
+            </div>
+            <div class="kpi-card" style="border-left-color: #2dd4bf;">
+              <div class="kpi-name">3SFCA (Wan et al. 2012)</div>
+              <div class="kpi-num" id="kpi_3sfca">0.000</div>
+              <div class="kpi-sub">Time selection weight G<sub>ij</sub></div>
+            </div>
+            <div class="kpi-card" style="border-left-color: #f59e0b;">
+              <div class="kpi-name">MH3SFCA (Subal 2021)</div>
+              <div class="kpi-num" id="kpi_mh3sfca">0.000</div>
+              <div class="kpi-sub">Capacity + Time Huff</div>
+            </div>
+          </div>
+
+          <div class="canvas-wrap">
+            <canvas id="chartTab1"></canvas>
+          </div>
+
+          <div class="legend-bar">
+            <div class="legend-item"><span class="swatch" style="background:#94a3b8;"></span> 2SFCA (Binary)</div>
+            <div class="legend-item"><span class="swatch" style="background:#38bdf8;"></span> E2SFCA (Gaussian)</div>
+            <div class="legend-item"><span class="swatch" style="background:#f43f5e;"></span> M2SFCA (Placement Penalty)</div>
+            <div class="legend-item"><span class="swatch" style="background:#2dd4bf;"></span> 3SFCA (Time Competition)</div>
+            <div class="legend-item"><span class="swatch" style="background:#f59e0b;"></span> MH3SFCA (Huff Capacity + Time)</div>
+          </div>
+
+          <div class="insight-box" id="insight_tab1"></div>
+        </div>
+      </div>
+
+      <!-- TAB 2: Competition & Huff Sandbox -->
+      <div id="tab2" class="tab-view hidden">
+        <div class="card">
+          <div class="card-title">
+            <span>Demand Inflation vs. Selection Probability (G<sub>ij</sub> &amp; Huff<sub>ij</sub>)</span>
+          </div>
+          <p class="card-subtitle">Why E2SFCA overestimates demand in multi-hospital clusters, and how 3SFCA (Wan et al., 2012) and MH3SFCA (Subal et al., 2021) normalize patient choice.</p>
+
+          <div class="kpi-grid">
+            <div class="kpi-card" style="border-left-color: #38bdf8;">
+              <div class="kpi-name">Gaussian Weight (W<sub>ij</sub>)</div>
+              <div class="kpi-num" id="kpi_wij">0.000</div>
+              <div class="kpi-sub">At d<sub>ij</sub> = <span id="sub_dij">30</span> min</div>
+            </div>
+            <div class="kpi-card" style="border-left-color: #2dd4bf;">
+              <div class="kpi-name">3SFCA Selection (G<sub>ij</sub>)</div>
+              <div class="kpi-num" id="kpi_gij">0.000</div>
+              <div class="kpi-sub">Pure travel-time share</div>
+            </div>
+            <div class="kpi-card" style="border-left-color: #f59e0b;">
+              <div class="kpi-name">MH3SFCA Huff Share</div>
+              <div class="kpi-num" id="kpi_huff">0.000</div>
+              <div class="kpi-sub">Weighted by S<sub>j</sub> tier</div>
+            </div>
+            <div class="kpi-card" style="border-left-color: #f43f5e;">
+              <div class="kpi-name">E2SFCA Demand Inflation</div>
+              <div class="kpi-num" id="kpi_inflation">100%</div>
+              <div class="kpi-sub">Unconstrained sum of W</div>
+            </div>
+          </div>
+
+          <div class="canvas-wrap">
+            <canvas id="chartTab2"></canvas>
+          </div>
+
+          <div class="insight-box">
+            <strong>Why 200 : 50 : 5 Tier Weights Matter in MH3SFCA / Huff Models:</strong> In standard 3SFCA (Wan et al., 2012), a Commune Health Station (S<sub>j</sub> = 5) and a Provincial General Hospital (S<sub>j</sub> = 200) located at the same travel time receive the exact same selection probability G<sub>ij</sub>. In MH3SFCA (Luo, 2014; Subal et al., 2021), facility capacity S<sub>j</sub> enters the numerator of the selection probability, capturing how patients bypass small local posts to reach major tertiary hospitals.
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: Beta Sensitivity (SPAI vs SPAR) -->
+      <div id="tab3" class="tab-view hidden">
+        <div class="card">
+          <div class="card-title">
+            <span>Impedance Sensitivity: Absolute Access (SPAI) vs. Spatial Access Ratio (SPAR)</span>
+          </div>
+          <p class="card-subtitle">Wan et al. (2012) proved that raw Spatial Access Index (SPAI) scores fluctuate wildly when &beta; changes, whereas normalizing by the regional mean (SPAR = A<sub>i</sub> / Mean(A)) stabilizes spatial patterns.</p>
+
+          <div class="canvas-wrap">
+            <canvas id="chartTab3"></canvas>
+          </div>
+
+          <div class="legend-bar">
+            <div class="legend-item"><span class="swatch" style="background:#38bdf8;"></span> Current &beta; Gaussian Decay Curve</div>
+            <div class="legend-item"><span class="swatch" style="background:#2dd4bf;"></span> Can Tho Map A Benchmark (&beta; = 781, d<sub>0</sub> = 60m)</div>
+            <div class="legend-item"><span class="swatch" style="background:#f43f5e;"></span> Can Tho Map B Benchmark (&beta; = 195, d<sub>0</sub> = 30m)</div>
+          </div>
+
+          <div class="insight-box">
+            <strong>How &beta; is Calibrated Mathematically:</strong> Following Wan et al. (2012) and Subal et al. (2021), &beta; is solved by setting the Gaussian weight W<sub>ij</sub> = exp(-d<sub>0</sub><sup>2</sup> / &beta;) = 0.01 at the catchment boundary d<sub>0</sub>. Rearranging gives <strong>&beta; = -d<sub>0</sub><sup>2</sup> / ln(0.01) = d<sub>0</sub><sup>2</sup> / 4.605</strong>. For d<sub>0</sub> = 60 min, &beta; = 3600 / 4.605 &approx; <strong>781.7</strong>. For d<sub>0</sub> = 30 min, &beta; = 900 / 4.605 &approx; <strong>195.4</strong>.
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: Master Comparison & Decision Advisor -->
+      <div id="tab4" class="tab-view hidden">
+        <div class="card">
+          <div class="card-title">
+            <span>Master Comparison Table &amp; Rationale Decision Matrix</span>
+          </div>
+          <p class="card-subtitle">Synthesized from Luo &amp; Wang (2003), Wan et al. (2012), Delamater (2013), Subal et al. (2021), and Stacherl &amp; Sauzet (2023).</p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>FCA Method</th>
+                  <th>Distance Decay</th>
+                  <th>Competition Fix</th>
+                  <th>System Conservation (&sum;A<sub>i</sub>P<sub>i</sub> = &sum;S<sub>j</sub>)</th>
+                  <th>Best Research Use Case &amp; Justification</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>2SFCA</strong><br><span style="color:#94a3b8;font-size:0.72rem;">Luo &amp; Wang (2003)</span></td>
+                  <td>Binary step (1 inside d<sub>0</sub>, 0 outside)</td>
+                  <td>None (unweighted population sum)</td>
+                  <td>Yes</td>
+                  <td>Baseline policy standards (e.g., official physician-to-population thresholds) where internal travel time is negligible.</td>
+                </tr>
+                <tr>
+                  <td><strong>E2SFCA / KD2SFCA</strong><br><span style="color:#94a3b8;font-size:0.72rem;">Luo &amp; Qi (2009); Dai (2010)</span></td>
+                  <td>Stepwise or continuous Gaussian W<sub>ij</sub></td>
+                  <td>Distance-weighted population only</td>
+                  <td>Yes</td>
+                  <td>General regional studies with moderate facility density; suffers from demand inflation in cities and weight cancellation in 1-clinic rural zones.</td>
+                </tr>
+                <tr>
+                  <td><strong>3SFCA</strong><br><span style="color:#94a3b8;font-size:0.72rem;">Wan et al. (2012)</span></td>
+                  <td>Stepwise or continuous Gaussian W<sub>ij</sub></td>
+                  <td>Travel-time selection probability G<sub>ij</sub></td>
+                  <td>Yes</td>
+                  <td><strong>Urban &amp; mixed regions with overlapping catchments:</strong> Prevents counting the same population multiple times across clustered clinics.</td>
+                </tr>
+                <tr>
+                  <td><strong>M2SFCA</strong><br><span style="color:#94a3b8;font-size:0.72rem;">Delamater (2013)</span></td>
+                  <td>Squared weight W<sub>ij</sub><sup>2</sup> in numerator</td>
+                  <td>Distance-weighted population</td>
+                  <td>No (penalizes suboptimal distance)</td>
+                  <td><strong>Emergency services, rural isolation &amp; facility siting:</strong> Penalizes long travel times even when a clinic has zero competitors.</td>
+                </tr>
+                <tr>
+                  <td><strong>MH3SFCA / Huff</strong><br><span style="color:#94a3b8;font-size:0.72rem;">Luo (2014); Subal (2021)</span></td>
+                  <td>Continuous Gaussian W<sub>ij</sub></td>
+                  <td>Huff probability (Capacity S<sub>j</sub> &times; W<sub>ij</sub>)</td>
+                  <td>Yes</td>
+                  <td><strong>Tiered healthcare hierarchies (e.g., 200:50:5):</strong> Models patients bypassing small commune clinics for major provincial hospitals.</td>
+                </tr>
+                <tr>
+                  <td><strong>V2SFCA / MM2SFCA</strong><br><span style="color:#94a3b8;font-size:0.72rem;">Luo &amp; Whippo (2012); Mao (2013)</span></td>
+                  <td>Continuous mode/catchment specific</td>
+                  <td>Subgroup or variable buffer split</td>
+                  <td>Yes</td>
+                  <td><strong>Transport equity &amp; urban-rural extremes:</strong> Compares ambulance vs. motorbike/boat speeds or dynamic rural travel thresholds.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: Mekong Delta / Can Tho QGIS Workflow -->
+      <div id="tab5" class="tab-view hidden">
+        <div class="card">
+          <div class="card-title">
+            <span>Can Tho / Mekong Delta 3SFCA Raster-Vector QGIS Architecture</span>
+          </div>
+          <p class="card-subtitle">Connecting your exact QGIS layers, SQL speed hierarchies, and GeoPackage calculations to the 3SFCA mathematical equations.</p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Phase &amp; Step</th>
+                  <th>Mathematical Formula</th>
+                  <th>QGIS Tool &amp; Layer Name</th>
+                  <th>Research Rationale (Can Tho Context)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>1. Urban Mask &amp; Friction Surface</strong></td>
+                  <td>Cost = 6 / Speed (min per 100m pixel)</td>
+                  <td><code>GHS_SMOD_UTM48N &gt;= 21</code><br><code>Merged_Speed_A.tif</code> &amp; <code>B.tif</code></td>
+                  <td>Separates formal urban roads from rural canal paths (&lt;3m wide) where ambulances are blocked (0 km/h) but motorbikes pass (20 km/h) and boats navigate canals (15 km/h).</td>
+                </tr>
+                <tr>
+                  <td><strong>2. Cumulative Travel Time (d<sub>ij</sub>)</strong></td>
+                  <td>Least-cost isotropic accumulation</td>
+                  <td><code>GRASS r.cost</code> &rarr; <code>Point Sampling Tool</code> on 227,616 WorldPop points</td>
+                  <td>Solves the "broken road" and dense riverine barrier problem in the Mekong Delta where straight-line Euclidean buffers fail.</td>
+                </tr>
+                <tr>
+                  <td><strong>3. Gaussian Decay &amp; Effective Demand</strong></td>
+                  <td>W<sub>ij</sub> = exp(-d<sub>ij</sub><sup>2</sup> / &beta;)<br>D<sub>k</sub> = P<sub>k</sub> &times; W<sub>ij</sub></td>
+                  <td>Field Calculator:<br><code>exp(-("Catchmen_1"^2)/781)</code><br><code>"VALUE" * "W_ij"</code></td>
+                  <td>Discounts raw WorldPop counts by travel impedance (&beta; = 781 for 60-min Map A; &beta; = 195.4 for 30-min Map B).</td>
+                </tr>
+                <tr>
+                  <td><strong>4. Catchment Demand &amp; Supply Ratio (R<sub>j</sub>)</strong></td>
+                  <td>R<sub>j</sub> = S<sub>j</sub> / &sum;D<sub>k</sub><br>(S<sub>j</sub> = 200, 50, 5)</td>
+                  <td><code>Join attributes by nearest</code> &rarr; <code>Statistics by categories</code> &rarr; <code>"Weight" / "dem_sum"</code></td>
+                  <td>Pairs each 100m cell to its primary facility (G<sub>ij</sub> = 1.0) and divides tiered hospital capacity (200:50:5) by total catchment demand.</td>
+                </tr>
+                <tr>
+                  <td><strong>5. Final Accessibility &amp; Medical Deserts</strong></td>
+                  <td>A<sub>i</sub> = R<sub>j</sub> &times; W<sub>ij</sub><br>&Delta;A = Map A &minus; Map B</td>
+                  <td>Processing Field Calculator:<br><code>"hosp_R_j" * "W_ij"</code> &rarr; <code>IDW Interpolation (100m)</code></td>
+                  <td>Streams 227,616 points without SQLite/OneDrive crashes, interpolates a 100m surface, and isolates hidden rural medical deserts.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentTab = 1;
+
+  function switchTab(tabIndex) {
+    currentTab = tabIndex;
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach((btn, idx) => {
+      btn.classList.toggle('active', idx + 1 === tabIndex);
+    });
+    for (let i = 1; i <= 5; i++) {
+      const el = document.getElementById('tab' + i);
+      if (el) el.classList.toggle('hidden', i !== tabIndex);
+    }
+    updateAll();
+  }
+
+  function applyPreset(d0, beta, dij, nalt, sj) {
+    document.getElementById('sl_d0').value = d0;
+    document.getElementById('sl_beta').value = beta;
+    document.getElementById('sl_dij').value = dij;
+    document.getElementById('sl_nalt').value = nalt;
+    document.getElementById('sel_sj').value = sj;
+    updateAll();
+  }
+
+  function gauss(d, d0, beta) {
+    if (d > d0) return 0;
+    return Math.exp(-(d * d) / beta);
+  }
+
+  function computeModelsAtTime(d, d0, beta, nAlt, Sj) {
+    const basePop = 1000;
+    const altDist = 20; // Representative distance to competing clinics (min)
+    const altSj = 50;   // District-level competing clinic capacity
+    const wk = gauss(20, d0, beta) || 0.5; // Average competing population decay
+
+    if (d > d0) {
+      return { m2s: 0, e2s: 0, m2sfca: 0, m3s: 0, mh3s: 0, w: 0, g: 0, huff: 0 };
+    }
+
+    const w = gauss(d, d0, beta);
+    const wAlt = gauss(altDist, d0, beta);
+
+    // When N_alt == 0, test the classic Single-Provider / Single-Tract case (t_k = d)
+    const effWk = (nAlt === 0) ? Math.max(w, 1e-6) : Math.max(wk, 1e-6);
+
+    // 1. 2SFCA (Binary step inside d0)
+    const m2s = (Sj / basePop) * (1 + nAlt * 0.25);
+
+    // 2. E2SFCA: (Sj * w) / (D * effWk). Notice when nAlt=0, w / effWk = 1.0 (flat line!)
+    const e2s = (Sj * w) / (basePop * effWk) + (nAlt > 0 ? (nAlt * altSj * wAlt) / (basePop * effWk * 2.2) : 0);
+
+    // 3. M2SFCA (Delamater 2013): multiplies by w again in numerator -> w^2 / effWk
+    const m2sfca = (Sj * w * w) / (basePop * effWk) + (nAlt > 0 ? (nAlt * altSj * wAlt * wAlt) / (basePop * effWk * 2.2) : 0);
+
+    // 4. 3SFCA (Wan et al. 2012): selection weight G_ij = w / (w + nAlt * wAlt)
+    const sumW = w + nAlt * wAlt;
+    const g = sumW > 0 ? w / sumW : 0;
+    const m3s = e2s * g;
+
+    // 5. MH3SFCA (Subal et al. 2021): Huff probability using Sj * w
+    const sumHuff = (Sj * w) + nAlt * (altSj * wAlt);
+    const huff = sumHuff > 0 ? (Sj * w) / sumHuff : 0;
+    const mh3s = e2s * huff;
+
+    return { m2s, e2s, m2sfca, m3s, mh3s, w, g, huff };
+  }
+
+  function setupCanvas(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return null;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const width = Math.max(rect.width - 16, 300);
+    const height = Math.max(rect.height - 16, 260);
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, width, height };
+  }
+
+  function drawAxes(ctx, w, h, pad, maxX, maxY, xLabel, yLabel, d0Line, inspectLine) {
+    ctx.clearRect(0, 0, w, h);
+    const plotW = w - pad.left - pad.right;
+    const plotH = h - pad.top - pad.bottom;
+
+    // Grid lines
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '11px sans-serif';
+
+    const yTicks = 5;
+    for (let i = 0; i <= yTicks; i++) {
+      const val = (maxY / yTicks) * i;
+      const y = pad.top + plotH - (i / yTicks) * plotH;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(pad.left + plotW, y);
+      ctx.stroke();
+      ctx.textAlign = 'right';
+      ctx.fillText(val.toFixed(2), pad.left - 8, y + 4);
+    }
+
+    const xStep = 15;
+    for (let t = 0; t <= maxX; t += xStep) {
+      const x = pad.left + (t / maxX) * plotW;
+      ctx.beginPath();
+      ctx.moveTo(x, pad.top);
+      ctx.lineTo(x, pad.top + plotH);
+      ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillText(t + 'm', x, pad.top + plotH + 18);
+    }
+
+    // d0 threshold vertical dashed line
+    if (d0Line !== null && d0Line <= maxX) {
+      const xD0 = pad.left + (d0Line / maxX) * plotW;
+      ctx.save();
+      ctx.strokeStyle = '#f43f5e88';
+      ctx.setLineDash([5, 4]);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(xD0, pad.top);
+      ctx.lineTo(xD0, pad.top + plotH);
+      ctx.stroke();
+      ctx.fillStyle = '#f43f5e';
+      ctx.textAlign = 'right';
+      ctx.fillText('d0 = ' + d0Line + 'm', xD0 - 5, pad.top + 14);
+      ctx.restore();
+    }
+
+    // Inspect travel time vertical line
+    if (inspectLine !== null && inspectLine <= maxX) {
+      const xInsp = pad.left + (inspectLine / maxX) * plotW;
+      ctx.save();
+      ctx.strokeStyle = '#38bdf866';
+      ctx.setLineDash([2, 3]);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(xInsp, pad.top);
+      ctx.lineTo(xInsp, pad.top + plotH);
+      ctx.stroke();
+      ctx.fillStyle = '#38bdf8';
+      ctx.textAlign = 'left';
+      ctx.fillText('Inspect: ' + inspectLine + 'm', xInsp + 5, pad.top + 28);
+      ctx.restore();
+    }
+
+    // Axis titles
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(xLabel, pad.left + plotW / 2, h - 4);
+
+    ctx.save();
+    ctx.translate(13, pad.top + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(yLabel, 0, 0);
+    ctx.restore();
+  }
+
+  function plotLine(ctx, points, maxX, maxY, pad, w, h, color, width, dashed) {
+    const plotW = w - pad.left - pad.right;
+    const plotH = h - pad.top - pad.bottom;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width || 2.5;
+    if (dashed) ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    points.forEach((pt, idx) => {
+      const x = pad.left + (pt.x / maxX) * plotW;
+      const y = pad.top + plotH - Math.min(pt.y / maxY, 1.0) * plotH;
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function updateAll() {
+    const d0 = parseFloat(document.getElementById('sl_d0').value);
+    const beta = parseFloat(document.getElementById('sl_beta').value);
+    const dij = parseFloat(document.getElementById('sl_dij').value);
+    const nAlt = parseInt(document.getElementById('sl_nalt').value, 10);
+    const Sj = parseFloat(document.getElementById('sel_sj').value);
+
+    document.getElementById('lbl_d0').textContent = d0 + ' min';
+    document.getElementById('lbl_beta').textContent = beta;
+    document.getElementById('lbl_dij').textContent = dij + ' min';
+    document.getElementById('lbl_nalt').textContent = nAlt + (nAlt === 1 ? ' clinic' : ' clinics');
+    document.getElementById('sub_dij').textContent = dij;
+
+    const badge = document.getElementById('badge_mode');
+    if (nAlt === 0) {
+      badge.textContent = 'Single-Provider Mode (E2SFCA Weight Cancellation Active!)';
+      badge.style.color = '#f43f5e';
+    } else {
+      badge.textContent = 'Multi-Facility Competition Active (N_alt = ' + nAlt + ')';
+      badge.style.color = '#38bdf8';
+    }
+
+    // KPI values at inspected dij
+    const cur = computeModelsAtTime(dij, d0, beta, nAlt, Sj);
+    document.getElementById('kpi_2sfca').textContent = cur.m2s.toFixed(3);
+    document.getElementById('kpi_e2sfca').textContent = cur.e2s.toFixed(3);
+    document.getElementById('kpi_m2sfca').textContent = cur.m2sfca.toFixed(3);
+    document.getElementById('kpi_3sfca').textContent = cur.m3s.toFixed(3);
+    document.getElementById('kpi_mh3sfca').textContent = cur.mh3s.toFixed(3);
+
+    document.getElementById('kpi_wij').textContent = cur.w.toFixed(3);
+    document.getElementById('kpi_gij').textContent = (cur.g * 100).toFixed(1) + '%';
+    document.getElementById('kpi_huff').textContent = (cur.huff * 100).toFixed(1) + '%';
+    const wAlt = gauss(20, d0, beta);
+    const inflationPct = ((cur.w + nAlt * wAlt) * 100).toFixed(0);
+    document.getElementById('kpi_inflation').textContent = inflationPct + '%';
+
+    // Dynamic Insight text for Tab 1
+    const insightEl = document.getElementById('insight_tab1');
+    if (nAlt === 0) {
+      insightEl.innerHTML = '<strong>Single-Provider Weight Cancellation Detected (N<sub>alt</sub> = 0):</strong> Notice how the blue <strong>E2SFCA</strong> line is completely flat at <strong>' + cur.e2s.toFixed(3) + '</strong> all the way to d<sub>0</sub> = ' + d0 + ' min! Because only one facility serves this isolated area, W<sub>ij</sub> in the numerator and W<sub>ij</sub> in the denominator cancel out (S<sub>j</sub>&middot;W<sub>ij</sub> / P<sub>i</sub>&middot;W<sub>ij</sub> = S<sub>j</sub>/P<sub>i</sub>). Only <strong>M2SFCA (red curve)</strong> penalizes travel time in single-provider zones.';
+    } else {
+      insightEl.innerHTML = '<strong>Multi-Facility Competition Active (N<sub>alt</sub> = ' + nAlt + '):</strong> At d<sub>ij</sub> = ' + dij + ' min, standard <strong>E2SFCA (' + cur.e2s.toFixed(3) + ')</strong> overestimates access because it assumes residents visit all ' + (nAlt + 1) + ' clinics simultaneously. <strong>3SFCA (' + cur.m3s.toFixed(3) + ')</strong> and <strong>MH3SFCA (' + cur.mh3s.toFixed(3) + ')</strong> apply selection weights so total population demand never exceeds 100%.';
+    }
+
+    // Draw active canvas
+    if (currentTab === 1) drawTab1(d0, beta, dij, nAlt, Sj);
+    if (currentTab === 2) drawTab2(d0, beta, dij, nAlt, Sj);
+    if (currentTab === 3) drawTab3(d0, beta, dij);
+  }
+
+  function drawTab1(d0, beta, dij, nAlt, Sj) {
+    const setup = setupCanvas('chartTab1');
+    if (!setup) return;
+    const { ctx, width, height } = setup;
+    const pad = { top: 20, right: 24, bottom: 38, left: 52 };
+    const maxX = 90;
+
+    const s2 = [], se2 = [], sm2 = [], s3 = [], smh = [];
+    let maxY = 0.05;
+    for (let t = 0; t <= maxX; t += 1) {
+      const r = computeModelsAtTime(t, d0, beta, nAlt, Sj);
+      s2.push({ x: t, y: r.m2s });
+      se2.push({ x: t, y: r.e2s });
+      sm2.push({ x: t, y: r.m2sfca });
+      s3.push({ x: t, y: r.m3s });
+      smh.push({ x: t, y: r.mh3s });
+      maxY = Math.max(maxY, r.m2s, r.e2s, r.m2sfca, r.m3s, r.mh3s);
+    }
+    maxY = maxY * 1.15;
+
+    drawAxes(ctx, width, height, pad, maxX, maxY, 'Travel Time d_ij (minutes)', 'Accessibility Score (A_i)', d0, dij);
+    plotLine(ctx, s2, maxX, maxY, pad, width, height, '#94a3b8', 2, true);
+    plotLine(ctx, se2, maxX, maxY, pad, width, height, '#38bdf8', 3, false);
+    plotLine(ctx, sm2, maxX, maxY, pad, width, height, '#f43f5e', 2.5, false);
+    plotLine(ctx, s3, maxX, maxY, pad, width, height, '#2dd4bf', 2.5, false);
+    plotLine(ctx, smh, maxX, maxY, pad, width, height, '#f59e0b', 2.5, false);
+  }
+
+  function drawTab2(d0, beta, dij, nAlt, Sj) {
+    const setup = setupCanvas('chartTab2');
+    if (!setup) return;
+    const { ctx, width, height } = setup;
+    const pad = { top: 20, right: 24, bottom: 38, left: 52 };
+    const maxX = 90;
+
+    const sW = [], sG = [], sHuff = [];
+    for (let t = 0; t <= maxX; t += 1) {
+      const r = computeModelsAtTime(t, d0, beta, nAlt, Sj);
+      sW.push({ x: t, y: r.w });
+      sG.push({ x: t, y: r.g });
+      sHuff.push({ x: t, y: r.huff });
+    }
+
+    drawAxes(ctx, width, height, pad, maxX, 1.05, 'Travel Time d_ij (minutes)', 'Weight / Selection Probability (0 to 1)', d0, dij);
+    plotLine(ctx, sW, maxX, 1.05, pad, width, height, '#38bdf8', 2.5, true);
+    plotLine(ctx, sG, maxX, 1.05, pad, width, height, '#2dd4bf', 3, false);
+    plotLine(ctx, sHuff, maxX, 1.05, pad, width, height, '#f59e0b', 3, false);
+  }
+
+  function drawTab3(d0, beta, dij) {
+    const setup = setupCanvas('chartTab3');
+    if (!setup) return;
+    const { ctx, width, height } = setup;
+    const pad = { top: 20, right: 24, bottom: 38, left: 52 };
+    const maxX = 90;
+
+    const sCur = [], sMapA = [], sMapB = [];
+    for (let t = 0; t <= maxX; t += 1) {
+      sCur.push({ x: t, y: gauss(t, d0, beta) });
+      sMapA.push({ x: t, y: gauss(t, 60, 781) });
+      sMapB.push({ x: t, y: gauss(t, 30, 195.4) });
+    }
+
+    drawAxes(ctx, width, height, pad, maxX, 1.05, 'Travel Time d_ij (minutes)', 'Gaussian Weight W_ij', d0, dij);
+    plotLine(ctx, sMapA, maxX, 1.05, pad, width, height, '#2dd4bf', 2, true);
+    plotLine(ctx, sMapB, maxX, 1.05, pad, width, height, '#f43f5e', 2, true);
+    plotLine(ctx, sCur, maxX, 1.05, pad, width, height, '#38bdf8', 3.2, false);
+  }
+
+  window.addEventListener('resize', updateAll);
+  window.addEventListener('DOMContentLoaded', updateAll);
+  setTimeout(updateAll, 80);
+</script>
+</body>
+</html>
